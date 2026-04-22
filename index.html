@@ -51,17 +51,21 @@
 
                 const data = await response.json();
                 // 注意：这里需要根据 API 返回的 hex 或 url 进行处理
+                const data = await response.json();
+                
                 if (data.data && data.data.audio) {
-                    resultDiv.innerHTML = `<p>✅ 生成成功！</p><audio controls src="data:audio/wav;base64,${data.data.audio}"></audio>`;
+                    // 核心修复：将 MiniMax 返回的 hex 字符串转换为浏览器可播放的 Blob
+                    const hexString = data.data.audio;
+                    const byteArray = new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                    const blob = new Blob([byteArray], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(blob);
+                    
+                    resultDiv.innerHTML = `
+                        <p style="color:#2ecc71">✅ 生成成功！</p>
+                        <audio controls autoplay src="${audioUrl}" style="width:100%"></audio>
+                        <br>
+                        <a href="${audioUrl}" download="my_music.wav" style="color:#ff4757; text-decoration:none; font-size:14px;">点击下载音乐文件</a>
+                    `;
                 } else {
-                    resultDiv.innerHTML = `<p style="color:red">失败了：${data.base_resp.status_msg || '未知错误'}</p>`;
+                    resultDiv.innerHTML = `<p style="color:red">失败了：${data.base_resp ? data.base_resp.status_msg : '返回数据格式不正确'}</p>`;
                 }
-            } catch (e) {
-                resultDiv.innerHTML = `<p style="color:red">请求出错：${e.message}</p>`;
-            } finally {
-                btn.disabled = false;
-            }
-        }
-    </script>
-</body>
-</html>
